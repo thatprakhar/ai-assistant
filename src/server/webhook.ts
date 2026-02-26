@@ -1,12 +1,35 @@
 import Fastify from "fastify";
 import crypto from "crypto";
-import { IngressGateway } from "../gateways/ingress";
+import { IngressGateway } from "../gateways/ingress.js";
 
-const fastify = Fastify({ logger: true });
+export const fastify = Fastify({ logger: true });
+
+// Ensure we capture the raw body buffer for signature verification
+fastify.addContentTypeParser('application/json', { parseAs: 'buffer' }, (req, body: Buffer, done) => {
+    try {
+        const json = JSON.parse(body.toString());
+        (req as any).rawBody = body; // Attach raw buffer
+        done(null, json);
+    } catch (err: any) {
+        err.statusCode = 400;
+        done(err, undefined);
+    }
+});
 
 // Environment vars
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "test-verify-token";
 const APP_SECRET = process.env.WHATSAPP_APP_SECRET || "test-app-secret";
+
+export function verifyWhatsAppSignature(rawBody: Buffer, signature: string, appSecret: string): boolean {
+    if (!rawBody || !signature || !appSecret) return false;
+    const hmac = crypto.createHmac("sha256", appSecret);
+    const expectedSignature = `sha256=${hmac.update(rawBody).digest("hex")}`;
+    try {
+        return crypto.timingSafeEqual(Buffer.from(signature, 'utf8'), Buffer.from(expectedSignature, 'utf8'));
+    } catch (e) {
+        return false;
+    }
+}
 
 // Webhook Verification (GET)
 fastify.get("/webhook", async (request, reply) => {
@@ -24,17 +47,16 @@ fastify.get("/webhook", async (request, reply) => {
 fastify.post("/webhook", async (request, reply) => {
     const signature = request.headers["x-hub-signature-256"] as string;
     const body = request.body as any;
+    const rawBody = (request as any).rawBody;
 
     // 1. Signature Verification
-    if (APP_SECRET && signature) {
-        const hmac = crypto.createHmac("sha256", APP_SECRET);
-        // Note: Fastify body is parsed JSON, for true WhatsApp strict validation, you may need raw body parsing
-        const expectedSignature = `sha256=${hmac.update(JSON.stringify(body)).digest("hex")}`;
-        // Basic check for MVP, realistic system strictly uses timingSafeEqual
-        if (signature !== expectedSignature) {
-            fastify.log.warn("Invalid signature");
-            // return reply.status(401).send("Invalid signature"); // Disabled for local dev testing
+    if (process.env.WHATSAPP_VERIFY_SIGNATURES !== "false") {
+        if (!verifyWhatsAppSignature(rawBody, signature, APP_SECRET)) {
+            fastify.log.warn("Invalid signature from WhatsApp Webhook");
+            return reply.status(401).send("Invalid signature");
         }
+    } else {
+        fastify.log.warn("WHATSAPP_VERIFY_SIGNATURES=false active. Skipping validation.");
     }
 
     try {
@@ -80,6 +102,4 @@ export const startServer = async () => {
     }
 };
 
-if (require.main === module) {
-    startServer();
-}
+// ESM entrypoint should be src/index.ts, not here.

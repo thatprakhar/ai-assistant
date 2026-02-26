@@ -55,15 +55,21 @@ export class IngressGateway {
         db.prepare(`UPDATE inbound_events SET status = 'processed' WHERE message_id = ?`).run(event.messageId);
 
         // Kick off the LangGraph App
+        const threadKey = event.chatId;
         const finalState = await masterAgentApp.invoke({
             runId: runId,
+            currentRole: "founder",
+            threadKey: threadKey,
             messages: [new HumanMessage(event.text)],
         });
 
         console.log(`[Ingress] Master Agent finished run ${runId}.`);
         RunManager.updateRunState(runId, "completed");
 
-        // Assuming orchestrator pushes outgoing messages via Egress Gateway internally
-        // or we can take finalState.messages and send them here.
+        const responseText = finalState.finalResponseText || "We have received your request, but an error occurred generating a response.";
+
+        // Egress will deduplicate outgoing
+        const { EgressGateway } = await import("./egress.js");
+        await EgressGateway.sendMessage(runId, event.chatId, responseText);
     }
 }

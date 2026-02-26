@@ -1,14 +1,31 @@
 export class JobHeuristics {
     /**
-     * H1: Heuristics to determine if a job requires a background subagent (long job)
-     * vs being handled synchronously by the main orchestrator graph.
-     * 
-     * In MVP:
-     * - Replying to simple questions (e.g., "What is the sprint goal?") is fast/sync.
-     * - Building a feature, QAing a release, or framing a large spec is async.
+     * Classifies whether a text message requires a long multi-agent
+     * execution or can be handled trivially inline.
      */
-    static isLongJob(intentType: "query" | "build_feature" | "qa_release" | "unknown"): boolean {
-        const longJobIntents = ["build_feature", "qa_release"];
-        return longJobIntents.includes(intentType);
+    static classifyJob(text: string): { jobClass: "TRIVIAL" | "LONG_JOB"; score: number; reasons: string[] } {
+        const lower = text.toLowerCase();
+
+        // Heuristics bounds implementation
+        if (
+            lower.includes("build") ||
+            lower.includes("design") ||
+            lower.includes("feature") ||
+            lower.includes("implement") ||
+            lower.includes("generate") ||
+            text.length > 200
+        ) {
+            return {
+                jobClass: "LONG_JOB",
+                score: 0.9,
+                reasons: ["Triggered generative/planning keywords ('build', 'design', 'feature') or length > 200."]
+            };
+        }
+
+        return {
+            jobClass: "TRIVIAL",
+            score: 0.2,
+            reasons: ["Short message without building/generative trigger words."]
+        };
     }
 }

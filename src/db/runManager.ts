@@ -21,6 +21,14 @@ export interface Step {
     updated_at: string;
 }
 
+/**
+ * RunManager
+ * 
+ * System Authority Boundaries:
+ * - DB Record (`runs`, `steps`): Canonical for active status, step history, and lifecycle
+ * - Filesystem Artifacts (`runs/<id>/artifacts/`): Canonical for content and contract data
+ * - Checkpoint Snapshots (`runs/<id>/snapshots/`): Canonical for LangGraph state resumability
+ */
 export class RunManager {
     /**
      * Creates a new run for a given conversation thread.

@@ -24,6 +24,31 @@ export const AgentStateAnnotation = Annotation.Root({
         default: () => "founder",
     }),
 
+    threadKey: Annotation<string>({
+        reducer: (x, y) => y ?? x,
+        default: () => "",
+    }),
+
+    finalResponseText: Annotation<string | undefined>({
+        reducer: (x, y) => y ?? x,
+        default: () => undefined,
+    }),
+
+    toolsUsed: Annotation<string[]>({
+        reducer: (x, y) => x.concat(y),
+        default: () => [],
+    }),
+
+    jobClass: Annotation<"TRIVIAL" | "LONG_JOB" | undefined>({
+        reducer: (x, y) => y ?? x,
+        default: () => undefined,
+    }),
+
+    routeReasons: Annotation<string[]>({
+        reducer: (x, y) => x.concat(y),
+        default: () => [],
+    }),
+
     // Any errors encountered in the graph
     errors: Annotation<string[]>({
         reducer: (x, y) => x.concat(y),

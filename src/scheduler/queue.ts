@@ -3,6 +3,8 @@ import { EgressGateway } from "../gateways/egress";
 
 export interface JobPayload {
     runId: string;
+    chatId: string;
+    initialMessageId: string;
     taskType: string;
     agentRole: string;
     payload: any;
@@ -21,7 +23,7 @@ export class Scheduler {
         // Notify the user via Outbound Channel (H4)
         await EgressGateway.sendMessage(
             job.runId,
-            job.runId, // Assuming threadKey == chatId for MVP
+            job.chatId,
             `⏳ Starting background task: ${job.taskType}`
         );
 
@@ -44,7 +46,7 @@ export class Scheduler {
         // H4: Progress Events
         await EgressGateway.sendMessage(
             job.runId,
-            job.runId,
+            job.chatId,
             `✅ Completed background task: ${job.taskType}`
         );
     }
@@ -56,7 +58,7 @@ export class Scheduler {
         console.log(`[Scheduler] Handling failure for run ${job.runId}`);
         await EgressGateway.sendMessage(
             job.runId,
-            job.runId,
+            job.chatId,
             `❌ The background task "${job.taskType}" failed: ${error.message}`
         );
         // Additional IPC to notify Master orchestrator to retry or mark run as blocked

@@ -11,13 +11,22 @@ export class EgressGateway {
      * Sends a message via the WhatsApp API and logs it for deduplication.
      */
     static async sendMessage(runId: string, chatId: string, text: string): Promise<void> {
+        const payloadStr = JSON.stringify({ type: "text", text: { body: text } });
+
+        // 1. Idempotency Check: Prevent duplicate sends for same specific message
+        const existing = db.prepare(`SELECT id, status FROM outbound_messages WHERE run_id = ? AND payload = ?`).get(runId, payloadStr) as any;
+        if (existing) {
+            console.log(`[Egress] Catch: Attempted to send duplicate message (currently ${existing.status}) for run ${runId}`);
+            return;
+        }
+
         const id = uuidv4();
 
-        // 1. Write an outgoing record
+        // 2. Write an outgoing record
         db.prepare(`
             INSERT INTO outbound_messages (id, run_id, chat_id, payload, status)
             VALUES (?, ?, ?, ?, 'queued')
-        `).run(id, runId, chatId, JSON.stringify({ type: "text", text: { body: text } }));
+        `).run(id, runId, chatId, payloadStr);
 
         console.log(`[Egress] Sending message to ${chatId} for run ${runId}`);
 
