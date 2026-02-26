@@ -1,0 +1,160 @@
+Milestones
+1) Milestones and timeline (8 weeks, realistic MVP)
+Today = Tue Feb 24, 2026
+Milestone 0 — Project scaffolding + contracts baseline (Week 1: Feb 24–Mar 2)
+Outcome: repo boots, schemas exist, artifact filesystem layout exists, you can run a local “fake WhatsApp message” through Founder → PM → response (no real WhatsApp yet).
+Milestone 1 — RunStore + MemoryStore + Checkpointing (Week 2: Mar 3–Mar 9)
+Outcome: every run is persisted; checkpoints are written; resume works; company memory is readable; run memory and scratch are separated.
+Milestone 2 — Role graphs implemented (PM/Design/Eng/QA) with contracts (Weeks 3–4: Mar 10–Mar 23)
+Outcome: each agent graph runs and produces the correct artifact JSON/MD, validated by Zod. Founder can orchestrate full pipeline locally.
+Milestone 3 — Tools layer (bash/files/browser/MCP) + permissions (Week 5: Mar 24–Mar 30)
+Outcome: tool interface is unified; retries/timeouts work; permissions enforced per role and per node.
+Milestone 4 — WhatsApp integration end-to-end (Week 6: Mar 31–Apr 6)
+Outcome: inbound webhook → run created → response sent back via WhatsApp. Idempotency works. Outbound dedupe works.
+Milestone 5 — “Long job” execution model (Subagents + IPC + progress) (Week 7: Apr 7–Apr 13)
+Outcome: complex tasks spawn worker processes; progress + result ingestion works; failures are bounded and recoverable.
+Milestone 6 — Hardening + “don’t miss anything” sweep (Week 8: Apr 14–Apr 20)
+Outcome: test matrix, disaster recovery (backup/restore), performance sanity, and a small demo “ship flow.”
+If you push hard full-time, you can compress to ~4–6 weeks. If this is evenings/weekends, 8 weeks is the “don’t hate your life” plan.
+
+2) Workstreams and line items
+Workstream A — Repo foundation + standards (Milestone 0)
+A1 Repo scaffold (TS + tsx + lint/prettier)
+A2 Folder structure (agents/core/tools/company-memory/runs)
+A3 Standard artifact format: header JSON + markdown body
+A4 Correlation IDs standard: runId/stepId/subtaskId everywhere
+A5 Local dev scripts: dev:webhook, dev:runner, db:migrate, run:simulate
+Exit criteria: npm run dev starts; npm run simulate runs a local message through Founder graph and creates a run folder.
+
+Workstream B — Contracts + schemas (Milestones 0–2)
+B1 Zod schemas for:
+context.json
+spec.json
+design.json
+build_plan.json
+implementation.json
+qa_plan.json
+qa_report.json
+“OpenQuestion” artifact schema
+B2 Validator utilities:
+validateArtifact(path, schema)
+strict failure → set status blocked + produce OpenQuestion
+B3 Contract docs (human-readable) stored in company-memory/architecture.md or core/contracts/README.md
+Exit criteria: any agent output is machine-validated; invalid outputs stop the pipeline with explicit questions.
+
+Workstream C — Memory management (Milestones 1–2)
+C1 File layout enforcement:
+company-memory/* (global)
+runs/<runId>/artifacts/* (per-run durable)
+runs/<runId>/scratch/<role>/* (per-role scratch)
+C2 Memory tools:
+Memory.read(scope, path|query)
+Memory.write(scope, path, content) (permissioned)
+Memory.append(scope, path, content)
+C3 Promotion workflow:
+decision proposals in run artifacts
+Founder promotes to company-memory/decisions/00xx-*.md
+C4 Retrieval policy:
+default context pack per role (pointers + summaries, not whole docs)
+Exit criteria: roles cannot write global memory directly; founder can promote decisions; memory reads are consistent.
+
+Workstream D — Run management + checkpointing + backup (Milestones 1–2)
+D1 SQLite schema (runs, steps, artifacts, checkpoints, inbound/outbound, subtasks)
+D2 Run lifecycle API:
+create run / load run / append step / mark complete / mark blocked
+D3 Checkpoint writer:
+snapshot minimal state after each node
+store pointer in DB + on disk
+D4 Resume logic:
+restart process, resume from last checkpoint
+D5 Backup/restore scripts:
+rotate backups, restore DB+snapshots
+Exit criteria: kill process mid-run → restart → resume; backups restorable.
+
+Workstream E — Role agents (graphs) (Milestones 2–3)
+Each agent gets its own LangGraph and state type.
+Founder/Master graph
+E1 Ingest message → create/load run
+E2 Load company context summary
+E3 Delegate PM → validate output
+E4 Delegate Design → validate output (conditional)
+E5 Delegate Eng → validate output (conditional)
+E6 Delegate QA → validate output (conditional)
+E7 Merge and decide response
+E8 Send message (or ask clarification)
+E9 Promote decisions + update roadmap/arch if needed
+PM graph
+E10 Load inputs
+E11 Problem framing
+E12 Requirements + AC
+E13 Milestones + risks + open questions
+E14 Publish spec/build_plan
+Design graph
+E15 UX goals + flows + states
+E16 Copy keys + interaction rules
+E17 Publish design
+Eng graph
+E18 Tech approach
+E19 Task breakdown
+E20 Execute changes (tools)
+E21 Tests + verification
+E22 Publish implementation + patches
+QA graph
+E23 Test matrix
+E24 Run automated checks
+E25 Review diffs + risks
+E26 Ship recommendation + report
+Exit criteria: full pipeline can run locally with simulated input and produce all artifacts.
+
+Workstream F — Tooling layer + permissions + retries (Milestone 3)
+F1 Unified Tool interface + ToolResult schema
+F2 Bash tool (execa): timeouts, output caps
+F3 File tool: patch + diff + rollback
+F4 Browser tool (Playwright): fetch/extract/summarize + URL list
+F5 MCP tool wrapper: normalized structured output
+F6 Permission model:
+role-based tool allowlist
+node-based tool allowlist (tightest)
+F7 Retry semantics:
+per-tool retry policies controlled by caller node
+exponential backoff utilities
+Exit criteria: tools behave consistently; permission violations are blocked and logged; retries bounded.
+
+Workstream G — WhatsApp integration (Milestone 4)
+G1 Webhook server (Fastify):
+verification challenge
+signature verification
+G2 Ingress gateway:
+idempotency key (chatId, messageId)
+normalize payload
+create run + store inbound event
+G3 Egress gateway:
+send API client
+outbound dedupe via sendId
+retry transient errors
+G4 End-to-end test:
+real WhatsApp message triggers response
+Exit criteria: WhatsApp message in → response out; replayed inbound doesn’t duplicate.
+
+Workstream H — Long jobs + subagents + IPC (Milestone 5)
+H1 Define “complex long job” heuristic (explicit)
+H2 Scheduler + IPC (JSONL over stdio)
+H3 Subagent templates (research/coding/data fetcher)
+H4 Progress events → stored in DB
+H5 Failure handling:
+worker retries its tools
+worker returns error object
+Founder/Eng decide fallback
+Exit criteria: long tasks don’t block master; progress visible; failures recover gracefully.
+
+Workstream I — Hardening + QA sweep (Milestone 6)
+I1 System test matrix (cover ACs, failure modes, dedupe, resume)
+I2 Disaster drill:
+corrupt run → restore from backup
+I3 Performance sanity:
+response under 60s for typical prompts
+I4 Security sanity (even if “no sensitive data”):
+store tokens safely in env
+never log secrets
+Exit criteria: confidence to run daily without fear.
+
