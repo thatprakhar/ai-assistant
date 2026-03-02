@@ -13,7 +13,7 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 import * as crypto from "crypto";
-import { AgentRole, ArtifactStatus } from "../contracts/common";
+import { AgentRole, ArtifactStatus } from "../contracts/common.js";
 import type { ZodSchema } from "zod";
 
 export type ArtifactType =

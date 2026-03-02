@@ -1,5 +1,5 @@
-import { RunManager, Run } from "./runManager";
-import { CheckpointWriter, Checkpoint } from "./checkpoint";
+import { RunManager, Run } from "./runManager.js";
+import { CheckpointWriter, Checkpoint } from "./checkpoint.js";
 
 export interface ResumePayload {
     run: Run;

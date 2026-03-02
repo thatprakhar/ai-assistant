@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Tool, ToolContext, ToolResult } from "./base";
+import { Tool, ToolContext, ToolResult } from "./base.js";
 
 export const MCPToolInputSchema = z.object({
     serverName: z.string().min(1),

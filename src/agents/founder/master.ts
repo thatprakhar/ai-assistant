@@ -6,6 +6,10 @@ import { JobHeuristics } from "../../scheduler/heuristics.js";
 import { Scheduler } from "../../scheduler/queue.js";
 import { CheckpointWriter } from "../../db/checkpoint.js";
 import { RunManager } from "../../db/runManager.js";
+import { pmAgentApp } from "../pm/pm.js";
+import { designAgentApp } from "../design/design.js";
+import { engAgentApp } from "../eng/eng.js";
+import { qaAgentApp } from "../qa/qa.js";
 import { ChatAnthropic } from "@langchain/anthropic";
 
 const llm = new ChatAnthropic({
@@ -39,14 +43,20 @@ export const founderGraph = new StateGraph(AgentStateAnnotation)
     // 0b. Dispatch Background Job
     .addNode("dispatch_long_job", async (state: AgentState) => {
         console.log(`[Founder] Dispatching background job for run ${state.runId}`);
+        const step = RunManager.appendStep(state.runId, "scheduler_enqueue");
+        RunManager.updateStepStatus(step.id, "running");
+
         await Scheduler.enqueueJob({
             runId: state.runId,
             chatId: state.threadKey,
-            initialMessageId: state.runId, // Fallback correlate ID
+            initialMessageId: state.initialMessageId || "unknown", // Fallback correlate ID
             taskType: "Long-running Feature/Analysis",
             agentRole: "founder",
             payload: state
         });
+
+        RunManager.updateStepStatus(step.id, "success");
+        await CheckpointWriter.saveCheckpoint(state.runId, step.id, state);
 
         return {
             finalResponseText: "I'm starting a background task to work on your request. I'll notify you when it's complete."
@@ -66,13 +76,18 @@ export const founderGraph = new StateGraph(AgentStateAnnotation)
     .addNode("delegate_pm", async (state: AgentState) => {
         console.log(`[Founder] Delegating to PM`);
         const step = RunManager.appendStep(state.runId, "pm_graph");
+        RunManager.updateStepStatus(step.id, "running");
 
-        // Mock PM execution for now
+        const pmOut = await pmAgentApp.invoke({ ...state, currentRole: "pm" });
+
         RunManager.updateStepStatus(step.id, "success");
-        await CheckpointWriter.saveCheckpoint(state.runId, step.id, state);
+        const mergedState = { ...state, ...pmOut };
+        await CheckpointWriter.saveCheckpoint(state.runId, step.id, mergedState);
 
         return {
-            artifacts: { spec: "runs/" + state.runId + "/artifacts/spec.json" }
+            artifacts: pmOut.artifacts || {},
+            errors: pmOut.errors || [],
+            toolsUsed: pmOut.toolsUsed || []
         };
     })
 
@@ -80,13 +95,18 @@ export const founderGraph = new StateGraph(AgentStateAnnotation)
     .addNode("delegate_design", async (state: AgentState) => {
         console.log(`[Founder] Delegating to Design`);
         const step = RunManager.appendStep(state.runId, "design_graph");
+        RunManager.updateStepStatus(step.id, "running");
 
-        // Mock Design execution for now
+        const designOut = await designAgentApp.invoke({ ...state, currentRole: "design" });
+
         RunManager.updateStepStatus(step.id, "success");
-        await CheckpointWriter.saveCheckpoint(state.runId, step.id, state);
+        const mergedState = { ...state, ...designOut };
+        await CheckpointWriter.saveCheckpoint(state.runId, step.id, mergedState);
 
         return {
-            artifacts: { design: "runs/" + state.runId + "/artifacts/design.json" }
+            artifacts: designOut.artifacts || {},
+            errors: designOut.errors || [],
+            toolsUsed: designOut.toolsUsed || []
         };
     })
 
@@ -94,13 +114,18 @@ export const founderGraph = new StateGraph(AgentStateAnnotation)
     .addNode("delegate_eng", async (state: AgentState) => {
         console.log(`[Founder] Delegating to Eng`);
         const step = RunManager.appendStep(state.runId, "eng_graph");
+        RunManager.updateStepStatus(step.id, "running");
 
-        // Mock Eng execution for now
+        const engOut = await engAgentApp.invoke({ ...state, currentRole: "eng" });
+
         RunManager.updateStepStatus(step.id, "success");
-        await CheckpointWriter.saveCheckpoint(state.runId, step.id, state);
+        const mergedState = { ...state, ...engOut };
+        await CheckpointWriter.saveCheckpoint(state.runId, step.id, mergedState);
 
         return {
-            artifacts: { implementation: "runs/" + state.runId + "/artifacts/implementation.json" }
+            artifacts: engOut.artifacts || {},
+            errors: engOut.errors || [],
+            toolsUsed: engOut.toolsUsed || []
         };
     })
 
@@ -108,21 +133,27 @@ export const founderGraph = new StateGraph(AgentStateAnnotation)
     .addNode("delegate_qa", async (state: AgentState) => {
         console.log(`[Founder] Delegating to QA`);
         const step = RunManager.appendStep(state.runId, "qa_graph");
+        RunManager.updateStepStatus(step.id, "running");
 
-        // Mock QA execution for now
+        const qaOut = await qaAgentApp.invoke({ ...state, currentRole: "qa" });
+
         RunManager.updateStepStatus(step.id, "success");
-        await CheckpointWriter.saveCheckpoint(state.runId, step.id, state);
+        const mergedState = { ...state, ...qaOut };
+        await CheckpointWriter.saveCheckpoint(state.runId, step.id, mergedState);
 
         return {
-            artifacts: { qa_report: "runs/" + state.runId + "/artifacts/qa_report.json" }
+            artifacts: qaOut.artifacts || {},
+            errors: qaOut.errors || [],
+            toolsUsed: qaOut.toolsUsed || []
         };
     })
 
     // 6. Merge & Respond
     .addNode("respond", async (state: AgentState) => {
         console.log(`[Founder] Creating final response for TRIVIAL completion`);
+        const builtArtifacts = Object.keys(state.artifacts || {}).join(", ");
         return {
-            finalResponseText: "We have successfully processed your request inline."
+            finalResponseText: `Processed request ${state.jobClass || "TRIVIAL"}. Generated artifacts: ${builtArtifacts}`
         };
     })
 

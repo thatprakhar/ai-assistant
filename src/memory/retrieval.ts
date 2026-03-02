@@ -1,6 +1,6 @@
-import { Memory } from "./memory";
-import { MemoryScope } from "./layout";
-import { AgentRole } from "../contracts/common";
+import { Memory } from "./memory.js";
+import { MemoryScope } from "./layout.js";
+import { AgentRole } from "../contracts/common.js";
 
 export interface ContextPack {
     globalContext: {

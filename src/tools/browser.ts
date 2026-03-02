@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Tool, ToolContext, ToolResult } from "./base";
+import { Tool, ToolContext, ToolResult } from "./base.js";
 import { chromium } from "playwright";
 
 export const BrowserToolInputSchema = z.object({

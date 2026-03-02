@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { NonEmptyString, StringArray, ToolName } from "./common";
+import { NonEmptyString, StringArray, ToolName } from "./common.js";
 
 export const ContextSchema = z.object({
     objective: NonEmptyString,

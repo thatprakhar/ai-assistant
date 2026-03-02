@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AgentRole, ToolName } from "../contracts/common";
+import { AgentRole, ToolName } from "../contracts/common.js";
 
 export const ToolResultSchema = z.object({
     ok: z.boolean(),

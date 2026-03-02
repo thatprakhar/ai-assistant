@@ -1,7 +1,7 @@
-import { Tool, ToolContext, ToolResult } from "./base";
-import { PermissionManager } from "./permissions";
+import { Tool, ToolContext, ToolResult } from "./base.js";
+import { PermissionManager } from "./permissions.js";
 import pRetry from "p-retry";
-import { ToolName } from "../contracts/common";
+import { ToolName } from "../contracts/common.js";
 
 export class ToolRunner {
     /**

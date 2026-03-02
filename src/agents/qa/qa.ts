@@ -2,6 +2,7 @@ import { StateGraph } from "@langchain/langgraph";
 import { AgentStateAnnotation, AgentState } from "../state.js";
 import { writeArtifact } from "../../core/artifacts.js";
 import { QAReportSchema } from "../../contracts/qa_report.schema.js";
+import { QAPlanSchema } from "../../contracts/qa_plan.schema.js";
 
 export const qaGraph = new StateGraph(AgentStateAnnotation)
     .addNode("write_qa_plan", async (state: AgentState) => {
@@ -10,8 +11,12 @@ export const qaGraph = new StateGraph(AgentStateAnnotation)
             runId: state.runId,
             artifactType: "qa_plan",
             authorRole: "qa",
-            body: { mock: "plan" },
-            markdown: "# QA Plan"
+            body: {
+                testMatrix: [{ id: "T-1", type: "manual", covers: ["FR-1"], steps: ["Test step"], expected: "Success" }],
+                riskBasedTests: []
+            },
+            markdown: "# QA Plan",
+            schema: QAPlanSchema
         });
         return { artifacts: { qa_plan: result.jsonPath } };
     })

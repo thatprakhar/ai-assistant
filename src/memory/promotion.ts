@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
-import { MemoryLayout, MemoryScope } from "./layout";
+import { MemoryLayout, MemoryScope } from "./layout.js";
 
 export class PromotionWorkflow {
     /**

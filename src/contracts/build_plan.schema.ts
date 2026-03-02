@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Id, Priority, NonEmptyString } from "./common";
+import { Id, Priority, NonEmptyString } from "./common.js";
 
 export const ImplementationMilestone = z.object({
     milestoneId: Id,          // maps to spec.milestones[].id

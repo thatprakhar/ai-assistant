@@ -69,7 +69,8 @@ export function initDB() {
             status TEXT NOT NULL,  -- 'queued', 'sent', 'failed'
             send_id TEXT,          -- WhatsApp's assigned message ID from their API response
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(run_id) REFERENCES runs(id)
+            FOREIGN KEY(run_id) REFERENCES runs(id),
+            UNIQUE(run_id, payload)
         );
     `);
 }

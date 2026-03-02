@@ -1,5 +1,5 @@
 import path from "path";
-import { AgentRole } from "../contracts/common";
+import { AgentRole } from "../contracts/common.js";
 
 export const PROJECT_ROOT = process.cwd(); // Assume we run from project root
 

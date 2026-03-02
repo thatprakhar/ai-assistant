@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Tool, ToolContext, ToolResult } from "./base";
+import { Tool, ToolContext, ToolResult } from "./base.js";
 import { execa } from "execa";
 
 const MAX_OUTPUT_LENGTH = 10000;

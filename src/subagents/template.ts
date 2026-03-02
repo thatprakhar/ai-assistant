@@ -1,7 +1,9 @@
-import { Scheduler } from "../scheduler/queue";
+import { Scheduler } from "../scheduler/queue.js";
 
 export interface SubagentOptions {
     runId: string;
+    chatId: string;
+    initialMessageId: string;
     parentJobId?: string;
     role: string;
 }
@@ -15,6 +17,8 @@ export class SubagentTemplate {
     static async spawnReviewAgent(opts: SubagentOptions, codeRef: string) {
         return Scheduler.enqueueJob({
             runId: opts.runId,
+            chatId: opts.chatId,
+            initialMessageId: opts.initialMessageId,
             agentRole: "eng_review",
             taskType: "Code Review",
             payload: { codeRef }
@@ -24,6 +28,8 @@ export class SubagentTemplate {
     static async spawnResearchAgent(opts: SubagentOptions, topic: string) {
         return Scheduler.enqueueJob({
             runId: opts.runId,
+            chatId: opts.chatId,
+            initialMessageId: opts.initialMessageId,
             agentRole: "pm_research",
             taskType: "Market Research",
             payload: { topic }

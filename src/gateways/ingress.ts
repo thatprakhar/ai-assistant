@@ -1,7 +1,7 @@
 import { HumanMessage } from "@langchain/core/messages";
-import { db } from "../db/schema";
-import { RunManager } from "../db/runManager";
-import { masterAgentApp } from "../agents/founder/master";
+import { db } from "../db/schema.js";
+import { RunManager } from "../db/runManager.js";
+import { masterAgentApp } from "../agents/founder/master.js";
 
 export interface WhatsAppMessageEvent {
     messageId: string;
@@ -60,6 +60,7 @@ export class IngressGateway {
             runId: runId,
             currentRole: "founder",
             threadKey: threadKey,
+            initialMessageId: event.messageId,
             messages: [new HumanMessage(event.text)],
         });
 

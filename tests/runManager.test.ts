@@ -17,6 +17,6 @@ describe("RunManager", () => {
         RunManager.updateStepStatus(step.id, "success");
         const steps = RunManager.getStepsForRun(run.id);
         expect(steps.length).toBe(1);
-        expect(steps[0].status).toBe("success");
+        expect(steps[0]!.status).toBe("success");
     });
 });

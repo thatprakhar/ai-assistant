@@ -1,4 +1,4 @@
-import { db } from "./schema";
+import { db } from "./schema.js";
 import { v4 as uuidv4 } from "uuid";
 import fs from "fs/promises";
 import path from "path";

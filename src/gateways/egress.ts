@@ -1,4 +1,4 @@
-import { db } from "../db/schema";
+import { db } from "../db/schema.js";
 import { v4 as uuidv4 } from "uuid";
 import { fetch } from "undici";
 
@@ -13,20 +13,18 @@ export class EgressGateway {
     static async sendMessage(runId: string, chatId: string, text: string): Promise<void> {
         const payloadStr = JSON.stringify({ type: "text", text: { body: text } });
 
-        // 1. Idempotency Check: Prevent duplicate sends for same specific message
-        const existing = db.prepare(`SELECT id, status FROM outbound_messages WHERE run_id = ? AND payload = ?`).get(runId, payloadStr) as any;
-        if (existing) {
-            console.log(`[Egress] Catch: Attempted to send duplicate message (currently ${existing.status}) for run ${runId}`);
-            return;
-        }
-
         const id = uuidv4();
 
-        // 2. Write an outgoing record
-        db.prepare(`
-            INSERT INTO outbound_messages (id, run_id, chat_id, payload, status)
+        // 1. Idempotency Check & Insert atomicity
+        const result = db.prepare(`
+            INSERT OR IGNORE INTO outbound_messages (id, run_id, chat_id, payload, status)
             VALUES (?, ?, ?, ?, 'queued')
         `).run(id, runId, chatId, payloadStr);
+
+        if (result.changes === 0) {
+            console.log(`[Egress] Catch: Attempted to send duplicate message for run ${runId}`);
+            return;
+        }
 
         console.log(`[Egress] Sending message to ${chatId} for run ${runId}`);
 

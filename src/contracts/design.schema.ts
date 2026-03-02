@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Id, NonEmptyString } from "./common";
+import { Id, NonEmptyString } from "./common.js";
 
 export const UXFlow = z.object({
     id: Id, // "FLOW-1"

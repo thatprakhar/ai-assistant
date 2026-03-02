@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { NonEmptyString, AgentRole, Id } from "./common";
+import { NonEmptyString, AgentRole, Id } from "./common.js";
 
 export const OpenQuestionArtifactSchema = z.object({
     questionId: Id,

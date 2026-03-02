@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { EgressGateway } from "../gateways/egress";
+import { EgressGateway } from "../gateways/egress.js";
 
 export interface JobPayload {
     runId: string;
@@ -17,6 +17,9 @@ export class Scheduler {
      * For our MVP, we simulate a queue using an async worker loop or simple Promises.
      */
     static async enqueueJob(job: JobPayload): Promise<string> {
+        if (!job.runId) throw new Error("Job must have a runId");
+        if (!job.chatId) throw new Error("Job must have a chatId");
+
         const jobId = uuidv4();
         console.log(`[Scheduler] Enqueued job ${jobId} for role ${job.agentRole}`);
 

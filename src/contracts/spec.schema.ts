@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Id, NonEmptyString, RequirementPriority, AgentRole } from "./common";
+import { Id, NonEmptyString, RequirementPriority, AgentRole } from "./common.js";
 
 export const FunctionalRequirement = z.object({
     id: Id, // e.g. "FR-1"

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { NonEmptyString, Id } from "./common";
+import { NonEmptyString, Id } from "./common.js";
 
 export const ChangedArea = z.object({
     path: NonEmptyString,

@@ -1,4 +1,4 @@
-import { AgentRole, ToolName } from "../contracts/common";
+import { AgentRole, ToolName } from "../contracts/common.js";
 
 /**
  * Global role-based tool allowlist.
